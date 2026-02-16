@@ -1,47 +1,47 @@
-<!DOCTYPE htm<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Brecha en Tiempo Real</title>
+    <title>Brecha en Tiempo Real - Constructores Financieros</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-white p-4">
+<body class="bg-slate-900 text-white p-4 font-sans">
     <div class="max-w-md mx-auto bg-slate-800 rounded-2xl shadow-2xl p-6 border-t-4 border-yellow-500">
-        <h1 class="text-xl font-black text-center mb-6 uppercase tracking-widest text-yellow-500">Brecha en Tiempo Real 💸</h1>
+        <h1 class="text-xl font-black text-center mb-6 text-yellow-500 uppercase tracking-widest">Brecha en Tiempo Real 💸</h1>
         
         <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-slate-700 p-4 rounded-xl border border-blue-500/30 text-center">
-                <span class="text-[10px] text-blue-400 font-bold block mb-1">DÓLAR BCV</span>
-                <span id="tasa-bcv" class="text-2xl font-black text-white">...</span>
+                <span class="text-[10px] text-blue-400 font-bold block mb-1 uppercase">Dólar BCV</span>
+                <span id="tasa-bcv" class="text-2xl font-black text-white italic">Cargando...</span>
             </div>
             <div class="bg-slate-700 p-4 rounded-xl border border-yellow-500/30 text-center">
-                <span class="text-[10px] text-yellow-500 font-bold block mb-1">DÓLAR PARALELO</span>
-                <span id="tasa-binance" class="text-2xl font-black text-white">...</span>
+                <span class="text-[10px] text-yellow-500 font-bold block mb-1 uppercase">Dólar Paralelo</span>
+                <span id="tasa-binance" class="text-2xl font-black text-white italic">Cargando...</span>
             </div>
         </div>
 
         <div class="space-y-4">
-            <label class="block text-center text-sm font-bold text-slate-400">¿CUÁNTOS DÓLARES QUIERES CALCULAR?</label>
-            <input type="number" id="monto" value="100" oninput="calcular()" class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-3xl font-bold text-center text-yellow-500 focus:border-yellow-500 outline-none transition-all">
+            <label class="block text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Monto a calcular ($)</label>
+            <input type="number" id="monto" value="100" oninput="calcular()" class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-4xl font-black text-center text-yellow-500 focus:border-yellow-500 outline-none transition-all shadow-inner">
         </div>
 
         <div id="resultados" class="mt-8 space-y-4">
-            <div class="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg">
-                <span class="text-sm text-slate-300 font-medium">Costo en BCV:</span>
-                <span id="res-bcv" class="text-xl font-bold text-blue-400">0,00 Bs</span>
+            <div class="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border-l-4 border-blue-500">
+                <span class="text-xs text-slate-300 font-bold">Costo en BCV:</span>
+                <span id="res-bcv" class="text-xl font-black text-blue-400">0,00 Bs</span>
             </div>
-            <div class="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg">
-                <span class="text-sm text-slate-300 font-medium">Costo en Paralelo:</span>
-                <span id="res-binance" class="text-xl font-bold text-yellow-500">0,00 Bs</span>
+            <div class="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border-l-4 border-yellow-500">
+                <span class="text-xs text-slate-300 font-bold">Costo en Paralelo:</span>
+                <span id="res-binance" class="text-xl font-black text-yellow-500">0,00 Bs</span>
             </div>
-            <div class="p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-center">
-                <p class="text-[10px] text-red-400 font-bold uppercase mb-1">Diferencia (Lo que dejas de ganar)</p>
-                <p id="diferencia" class="text-2xl font-black text-red-500">0,00 Bs</p>
+            <div class="p-4 bg-red-600/20 border border-red-500/50 rounded-xl text-center shadow-lg">
+                <p class="text-[10px] text-red-400 font-black uppercase mb-1">Diferencia (Brecha Cambiaria)</p>
+                <p id="diferencia" class="text-3xl font-black text-red-500">0,00 Bs</p>
             </div>
         </div>
         
-        <p class="text-[9px] text-center mt-6 text-slate-500 uppercase tracking-tighter">Actualizado automáticamente vía API</p>
+        <p id="msg-status" class="text-[9px] text-center mt-6 text-slate-500 font-bold uppercase tracking-widest italic">Conectando con indicadores oficiales...</p>
     </div>
 
     <script>
@@ -49,34 +49,37 @@
         let paralelo = 0;
 
         async function cargarDatos() {
+            // Usamos un proxy para saltar el bloqueo de GitHub (CORS)
+            const proxy = "https://api.allorigins.win/get?url=";
+            const target = encodeURIComponent("https://pydolarve.org/api/v1/dollar?page=bcv");
+            
             try {
-                // Usamos una API pública de indicadores para Venezuela
-                const response = await fetch('https://pydolarve.org/api/v1/dollar?page=bcv');
-                const data = await response.json();
+                const response = await fetch(proxy + target);
+                const rawData = await response.json();
+                const data = JSON.parse(rawData.contents);
                 
-                // Extraemos BCV y Monitor (como referencia de paralelo/Binance)
                 bcv = data.monitors.bcv.price;
                 paralelo = data.monitors.enparalelovzla.price;
 
                 document.getElementById('tasa-bcv').innerText = bcv.toFixed(2) + " Bs";
                 document.getElementById('tasa-binance').innerText = paralelo.toFixed(2) + " Bs";
+                document.getElementById('msg-status').innerText = "✓ Sincronizado con BCV y Paralelo";
                 
                 calcular();
             } catch (error) {
-                console.error("Error al obtener tasas:", error);
-                document.getElementById('tasa-bcv').innerText = "Error";
-                document.getElementById('tasa-binance').innerText = "Error";
+                console.error(error);
+                document.getElementById('msg-status').innerText = "⚠ Error de conexión. Refresque la página.";
             }
         }
 
         function calcular() {
             const monto = parseFloat(document.getElementById('monto').value) || 0;
             const totalBCV = monto * bcv;
-            const totalParalelo = monto * paralelo;
-            const dif = totalParalelo - totalBCV;
+            const totalPara = monto * paralelo;
+            const dif = totalPara - totalBCV;
 
             document.getElementById('res-bcv').innerText = totalBCV.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
-            document.getElementById('res-binance').innerText = totalParalelo.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
+            document.getElementById('res-binance').innerText = totalPara.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
             document.getElementById('diferencia').innerText = dif.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
         }
 
