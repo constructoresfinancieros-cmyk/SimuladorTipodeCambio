@@ -35,9 +35,15 @@
                 <span class="text-xs text-slate-300 font-bold uppercase text-shadow-sm">Costo en USDT:</span>
                 <span id="res-binance" class="text-xl font-black text-yellow-500 text-shadow-sm">0,00 Bs</span>
             </div>
+            
             <div class="p-4 bg-red-600/20 border border-red-500/50 rounded-xl text-center shadow-lg transform scale-105 mt-4">
-                <p class="text-[10px] text-red-400 font-black uppercase mb-1 italic">Diferencia (Brecha)</p>
+                <p class="text-[10px] text-red-400 font-black uppercase mb-1 italic">Diferencia Total</p>
                 <p id="diferencia" class="text-3xl font-black text-red-500">0,00 Bs</p>
+                
+                <div class="mt-2 pt-2 border-t border-red-500/20">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase italic">Nivel de Brecha Cambiaria</p>
+                    <p id="porcentaje-brecha" class="text-xl font-black text-white tracking-widest">0.00%</p>
+                </div>
             </div>
         </div>
         
@@ -79,10 +85,19 @@
             const totalBCV = monto * bcv;
             const totalPara = monto * paralelo;
             const dif = totalPara - totalBCV;
+            
+            // Cálculo de la brecha porcentual
+            let brechaPorcentaje = 0;
+            if (bcv > 0) {
+                brechaPorcentaje = ((paralelo - bcv) / bcv) * 100;
+            }
 
             document.getElementById('res-bcv').innerText = totalBCV.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
             document.getElementById('res-binance').innerText = totalPara.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
             document.getElementById('diferencia').innerText = dif.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
+            
+            // Actualizar el porcentaje de brecha
+            document.getElementById('porcentaje-brecha').innerText = brechaPorcentaje.toFixed(2) + "%";
         }
 
         obtenerTasas();
