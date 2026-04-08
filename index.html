@@ -1,41 +1,111 @@
-async function obtenerTasas() {
-            const status = document.getElementById('status-text');
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora USDT - Constructores Financieros</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-4 font-sans italic">
+    <div class="max-w-md mx-auto bg-slate-800 rounded-2xl shadow-2xl p-6 border-t-4 border-yellow-500">
+        <h1 class="text-xl font-black text-center mb-6 text-yellow-500 uppercase tracking-widest">Simulador de Brecha 🚀</h1>
+        
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-slate-700 p-4 rounded-xl border border-blue-500/30 text-center">
+                <span class="text-[10px] text-blue-400 font-bold block mb-1 uppercase">Tasa BCV</span>
+                <span id="tasa-bcv" class="text-2xl font-black text-white italic">Cargando...</span>
+            </div>
+            <div class="bg-slate-700 p-4 rounded-xl border border-yellow-500/30 text-center">
+                <span class="text-[10px] text-yellow-500 font-bold block mb-1 uppercase">USDT BINANCE</span>
+                <span id="tasa-binance" class="text-2xl font-black text-white italic">Cargando...</span>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <label class="block text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Monto en Dólares ($)</label>
+            <input type="number" id="monto" value="100" oninput="calcular()" class="w-full bg-slate-900 border-2 border-slate-700 rounded-xl p-4 text-4xl font-black text-center text-yellow-500 focus:border-yellow-500 outline-none transition-all shadow-inner">
+        </div>
+
+        <div id="resultados" class="mt-8 space-y-4">
+            <div class="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border-l-4 border-blue-500 shadow-sm">
+                <span class="text-xs text-slate-300 font-bold uppercase">Costo en BCV:</span>
+                <span id="res-bcv" class="text-xl font-black text-blue-400">0,00 Bs</span>
+            </div>
+            <div class="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border-l-4 border-yellow-500 shadow-sm">
+                <span class="text-xs text-slate-300 font-bold uppercase">Costo en USDT:</span>
+                <span id="res-binance" class="text-xl font-black text-yellow-500">0,00 Bs</span>
+            </div>
             
-            // Lista de APIs de respaldo (Fuentes distintas)
-            const fuentes = [
-                'https://ve.dolarapi.com/v1/dolares',
-                'https://pydolarve.org/api/v1/dollar?page=bcv' // Respaldo 1
-            ];
+            <div class="p-4 bg-red-600/20 border border-red-500/50 rounded-xl text-center shadow-lg transform scale-105 mt-4">
+                <p class="text-[10px] text-red-400 font-black uppercase mb-1 italic">Diferencia Total</p>
+                <p id="diferencia" class="text-3xl font-black text-red-500">0,00 Bs</p>
+                
+                <div class="mt-2 pt-2 border-t border-red-500/20">
+                    <p class="text-[9px] text-slate-400 font-bold uppercase italic">Nivel de Brecha Cambiaria</p>
+                    <p id="porcentaje-brecha" class="text-xl font-black text-white tracking-widest">0.00%</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 pt-4 border-t border-slate-700 text-center">
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Desarrollado por</p>
+            <p class="text-sm font-black text-yellow-500 uppercase tracking-widest mt-1">Constructores Financieros</p>
+        </div>
+        
+        <p id="status-text" class="text-[8px] text-center mt-4 text-slate-600 font-bold uppercase tracking-widest">Sincronización Automática Activa</p>
+    </div>
 
+    <script>
+        let bcv = 0;
+        let paralelo = 0;
+
+        async function obtenerTasas() {
             try {
-                status.innerText = "Sincronizando datos...";
-                
-                const response = await fetch(fuentes[0]);
-                
-                if (!response.ok) throw new Error("API Principal caída");
+                // Usamos los endpoints directos para evitar fallos de nombres
+                const [resBCV, resPara] = await Promise.all([
+                    fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
+                    fetch('https://ve.dolarapi.com/v1/dolares/paralelo')
+                ]);
 
-                const data = await response.json();
-                
-                // Buscamos los nombres (manejando variaciones de la API)
-                const dolarBCV = data.find(d => d.nombre === 'Oficial' || d.nombre === 'BCV');
-                const dolarPara = data.find(d => d.nombre === 'Paralelo' || d.nombre === 'EnParaleloVzla');
+                const dataBCV = await resBCV.json();
+                const dataPara = await resPara.json();
 
-                bcv = dolarBCV.promedio;
-                paralelo = dolarPara.promedio;
+                bcv = dataBCV.promedio;
+                paralelo = dataPara.promedio;
 
-                actualizarInterfaz();
-                status.innerText = "Sincronización Automática Activa";
+                document.getElementById('tasa-bcv').innerText = bcv.toFixed(2) + " Bs";
+                document.getElementById('tasa-binance').innerText = paralelo.toFixed(2) + " Bs";
                 
+                calcular();
+                document.getElementById('status-text').innerText = "Sincronizado: " + new Date().toLocaleTimeString();
             } catch (error) {
-                console.error("Fallo fuente principal, intentando respaldo...");
-                // Aquí podrías añadir un segundo fetch a otra API si tuvieras el endpoint listo
-                status.innerText = "Error de servidor externo. Reintentando en breve...";
-                setTimeout(obtenerTasas, 30000); // Reintenta cada 30 seg si está caído
+                console.error("Error obteniendo tasas:", error);
+                document.getElementById('status-text').innerText = "Error de conexión - Reintentando...";
+                setTimeout(obtenerTasas, 5000);
             }
         }
 
-        function actualizarInterfaz() {
-            document.getElementById('tasa-bcv').innerText = bcv.toFixed(2) + " Bs";
-            document.getElementById('tasa-binance').innerText = paralelo.toFixed(2) + " Bs";
-            calcular();
+        function calcular() {
+            const montoInput = document.getElementById('monto').value;
+            const monto = parseFloat(montoInput) || 0;
+            
+            const totalBCV = monto * bcv;
+            const totalPara = monto * paralelo;
+            const dif = totalPara - totalBCV;
+            
+            let brechaPorcentaje = 0;
+            if (bcv > 0) {
+                brechaPorcentaje = ((paralelo - bcv) / bcv) * 100;
+            }
+
+            document.getElementById('res-bcv').innerText = totalBCV.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
+            document.getElementById('res-binance').innerText = totalPara.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
+            document.getElementById('diferencia').innerText = dif.toLocaleString('es-VE', {minimumFractionDigits: 2}) + " Bs";
+            document.getElementById('porcentaje-brecha').innerText = brechaPorcentaje.toFixed(2) + "%";
         }
+
+        // Iniciar la carga de datos al abrir
+        obtenerTasas();
+    </script>
+</body>
+</html>
